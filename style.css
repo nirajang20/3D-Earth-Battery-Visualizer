@@ -1,0 +1,102 @@
+@import url('https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap');
+
+/* General Reset and Styling */
+body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif; background-color: #000000; color: #ffffff; overflow: hidden; }
+#bg { position: fixed; top: 0; left: 0; outline: none; }
+.top-nav { position: fixed; top: 0; left: 0; width: 100%; padding: 20px 30px; z-index: 20; box-sizing: border-box; }
+.top-nav a { color: white; text-decoration: none; font-size: 1.2rem; font-weight: 500; opacity: 0.8; transition: opacity 0.3s; }
+.top-nav a:hover { opacity: 1; }
+#fullscreen-btn { position: fixed; top: 20px; right: 30px; z-index: 20; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 50%; width: 40px; height: 40px; padding: 8px; cursor: pointer; transition: background-color 0.3s; }
+#fullscreen-btn:hover { background: rgba(255, 255, 255, 0.2); }
+#fullscreen-btn svg { width: 100%; height: 100%; fill: white; }
+
+/* Battery Status Overlay */
+#battery-status-container { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 10; pointer-events: none; }
+
+/* Liquid Fill Text Effect */
+#level { position: relative; font-family: 'Indie Flower', cursive; font-size: 10rem; font-weight: bold; color: transparent; -webkit-text-stroke: 2px rgba(255, 255, 255, 0.5); margin: 0; }
+
+/* The liquid fill (::before) */
+#level span::before {
+    content: attr(data-text);
+    position: absolute;
+    top: 0; /* Important: The element covers the full height of the text */
+    left: 0;
+    width: 100%;
+    height: 100%; /* Important: The element covers the full height of the text */
+    color: #00d9ff;
+    -webkit-text-stroke: 0;
+    overflow: hidden;
+    transition: clip-path 0.5s ease-out; /* Smooth transition for the fill level */
+}
+
+/* Base clip-path for filling from bottom up (no wave, just a straight line) */
+/* The key here is the Y-coordinate of the first two points:
+   `calc(100% - var(--liquid-fill-percent, 0%))`
+   When --liquid-fill-percent is 0%, this calc evaluates to 100% (bottom of the text).
+   When --liquid-fill-percent is 50%, this evaluates to 50% (middle of the text).
+   When --liquid-fill-percent is 100%, this evaluates to 0% (top of the text).
+   The last two points (100% 100%, 0% 100%) ensure the clip path extends to the bottom of the text.
+*/
+#level span::before {
+    clip-path: polygon(
+        0% var(--clip-y, 100%), /* Left top corner of the visible liquid */
+        100% var(--clip-y, 100%), /* Right top corner of the visible liquid */
+        100% 100%, /* Bottom right corner of the visible liquid */
+        0% 100%    /* Bottom left corner of the visible liquid */
+    );
+    /* We'll set --clip-y from JavaScript for a cleaner transition on fill level */
+    /* For direct CSS control: clip-path: polygon(0% calc(100% - var(--liquid-fill-percent, 0%)), 100% calc(100% - var(--liquid-fill-percent, 0%)), 100% 100%, 0% 100%); */
+}
+
+/* JS will set --clip-y on #level-value based on battery level. */
+/* The actual `--liquid-fill-percent` determines the calculated --clip-y */
+
+
+/* --- NEW: Add the wave animation ONLY when the parent has the .is-charging class --- */
+#level.is-charging span::before {
+    /* When charging, override the straight clip-path with the wavy one */
+    animation: wave-animation 2s ease-in-out infinite;
+}
+
+@keyframes wave-animation {
+    /* Adjust these percentages relative to the *top edge* of the liquid, which is controlled
+       by `var(--liquid-fill-percent)`.
+       The first row of points defines the wavy surface.
+       The last two points (100% 100%, 0% 100%) anchor the polygon to the bottom.
+       The numbers (e.g., 5%, 10%, 20%) control the amplitude of the wave.
+       A larger percentage means the wave dips/rises more.
+    */
+    0%, 100% {
+        clip-path: polygon(
+            0%    calc(100% - (var(--liquid-fill-percent, 0%) + 5%)), /* Adjusted wave Y relative to fill level */
+            15%   calc(100% - (var(--liquid-fill-percent, 0%) + 4%)),
+            32%   calc(100% - (var(--liquid-fill-percent, 0%) + 10%)),
+            54%   calc(100% - (var(--liquid-fill-percent, 0%) + 20%)),
+            70%   calc(100% - (var(--liquid-fill-percent, 0%) + 21%)),
+            84%   calc(100% - (var(--liquid-fill-percent, 0%) + 19%)),
+            100%  calc(100% - (var(--liquid-fill-percent, 0%) + 12%)),
+            100% 100%, /* Bottom right */
+            0% 100%    /* Bottom left */
+        );
+    }
+    50% {
+        clip-path: polygon(
+            0%    calc(100% - (var(--liquid-fill-percent, 0%) + 20%)), /* Adjusted wave Y relative to fill level */
+            16%   calc(100% - (var(--liquid-fill-percent, 0%) + 25%)),
+            34%   calc(100% - (var(--liquid-fill-percent, 0%) + 26%)),
+            51%   calc(100% - (var(--liquid-fill-percent, 0%) + 22%)),
+            67%   calc(100% - (var(--liquid-fill-percent, 0%) + 10%)),
+            84%   calc(100% - (var(--liquid-fill-percent, 0%) + 5%)),
+            100%  calc(100% - (var(--liquid-fill-percent, 0%) + 6%)),
+            100% 100%,
+            0% 100%
+        );
+    }
+}
+
+/* Other styles */
+#chargingState { margin-top: 10px; font-size: 1rem; text-transform: uppercase; letter-spacing: 2px; opacity: 0.9; text-shadow: 0 0 10px rgba(0, 191, 255, 0.7); }
+#unsupported-message { margin-top: 15px; font-size: 0.8rem; color: #ffcc00; }
+#description-text { position: absolute; bottom: 70px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 600px; text-align: center; color: rgba(255, 255, 255, 0.6); font-size: 0.9rem; line-height: 1.5; z-index: 10; pointer-events: none; }
+footer { position: absolute; bottom: 20px; width: 100%; text-align: center; color: rgba(255, 255, 255, 0.5); font-size: 0.9rem; z-index: 10; pointer-events: none; }
